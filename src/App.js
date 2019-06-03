@@ -8,6 +8,8 @@ import Rank from './components/Rank/Rank';
 import FaceRecognition from './components/FaceRecognition/FaceRecognition';
 import Signin from './components/Signin/Signin';
 import Register from './components/Register/Register';
+import Modal from './components/Modal/Modal';
+import Profile from './components/Profile/Profile';
 
 
 const paramOptions = {
@@ -26,15 +28,18 @@ const paramOptions = {
 const initialState = {
   input: '',
       imageUrl: '',
-      Box: {},
+      boxes: [],
       route: 'signin',
       isSignedIn: false,
+      isProfileOpen: false,
       user: {
         id: '',
         name:  '',
         email: '',
         entries: 0,
         joined: '',
+        age: 0,
+        pet: ''
       }
 }
 
@@ -44,6 +49,39 @@ class App extends Component {
     super();
     this.state = initialState;
   }
+
+  componentDidMount() {
+    const token = window.sessionStorage.getItem('token');
+    if(token) {
+    fetch('http://192.168.99.100:3001/signin', {
+      method: 'post',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': token
+      }
+    })
+    .then(response => response.json())
+    .then(data => {
+      if(data && data.id) {
+        fetch(`http://192.168.99.100:3001/profile/${data.id}`, {
+          method: 'get',
+          headers: {
+          'Content-Type': 'application/json',
+          'Authorization': token
+          }
+        })
+        .then(response => response.json())
+        .then(user => {
+          if(user && user.email) {
+            this.loadUser(user);
+            this.onRouteChange('home');
+          }
+        })
+      }
+    })
+    .catch(console.log);
+  }
+}
 
       loadUser = (data) => {
       this.setState({user: {
@@ -59,28 +97,46 @@ class App extends Component {
     this.setState({input: event.target.value});
   }
 
-  calculateFaceDetection = (data) => {
-    const clarifaiFace = data.outputs[0].data.regions[0].region_info.bounding_box;
-    const image = document.getElementById('inputimage');
-    const width = Number(image.width);
-    const height = Number(image.height);
-    return {
-      leftCol: clarifaiFace.left_col * width,
-      topRow: clarifaiFace.top_row * height,
-      rightCol: width - (clarifaiFace.right_col * width),
-      bottomRow: height - (clarifaiFace.bottom_row * height)
-    }
+  calculateFaceDetections = (data) => {
+    if(data && data.outputs) {
+    const boxes = data.outputs[0].data.regions.map(face => {
+      const clarifaiFace = face.region_info.bounding_box;
+      const image = document.getElementById('inputimage');
+      const width = Number(image.width);
+      const height = Number(image.height);
+
+      return {
+        leftCol: clarifaiFace.left_col * width,
+        topRow: clarifaiFace.top_row * height,
+        rightCol: width - (clarifaiFace.right_col * width),
+        bottomRow: height - (clarifaiFace.bottom_row * height)
+      }
+    })
+    return boxes;
+  }
+    return;
   }
 
-  displayFaceBox = (box) => {
-    this.setState({Box: box});
+  displayFaceBoxes = (boxes) => {
+    if(boxes)
+      this.setState({boxes});
+  }
+
+  toggleModal = () => {
+    this.setState(prevState => ({
+      ...prevState,
+      isProfileOpen: !prevState.isProfileOpen
+    }))
   }
 
   onButtonSubmit = () => {
     this.setState({imageUrl: this.state.input});
-    fetch('http://localhost:3001/imageurl', {
+    fetch('http://192.168.99.100:3001/imageurl', {
             method: 'post',
-            headers: {'Content-type': 'application/json'},
+            headers: {
+              'Content-type': 'application/json',
+              'Authorization': window.sessionStorage.getItem('token')
+            },
             body: JSON.stringify({
               input: this.state.input
             })
@@ -88,9 +144,12 @@ class App extends Component {
       .then(response => response.json())
       .then(response => {
         if(response) {
-          fetch('http://localhost:3001/image', {
+          fetch('http://192.168.99.100:3001/image', {
             method: 'put',
-            headers: {'Content-type': 'application/json'},
+            headers: {
+              'Content-type': 'application/json',
+              'Authorization': window.sessionStorage.getItem('token')
+            },
             body: JSON.stringify({
               id: this.state.user.id
             })
@@ -101,15 +160,16 @@ class App extends Component {
           })
           .catch(console.log)
         }
-        this.displayFaceBox(this.calculateFaceDetection(response))
+        console.log(response);
+        this.displayFaceBoxes(this.calculateFaceDetections(response))
       })
     .catch(err => console.log(err));
   
   }
 
   onRouteChange = (route) => {
-    if(route === 'signin') {
-      this.setState(initialState)
+    if(route === 'signout') {
+      return this.setState(initialState)
     } else if(route === 'home') {
       this.setState({isSignedIn: true})
     }
@@ -124,16 +184,22 @@ class App extends Component {
        <Particles className='particles' 
               params={paramOptions}
       />
-        <Navigation isSignedIn={this.state.isSignedIn} onRouteChange={this.onRouteChange}/>
+        <Navigation isSignedIn={this.state.isSignedIn} onRouteChange={this.onRouteChange} toggleModal={this.toggleModal}/>
+        { this.state.isProfileOpen &&
+          <Modal>
+            <Profile isProfileOpen={this.state.isProfileOpen} toggleModal={this.toggleModal} user={this.state.user} loadUser={this.loadUser}/>
+          </Modal>
+        }
         {this.state.route === 'home'
         ? <div> 
             <Logo/>
+            
              <Rank name={this.state.user.name} entries={this.state.user.entries}/>
             <ImageLinkForm 
             onInputChange={this.onInputChange}
             onButtonSubmit={this.onButtonSubmit}
             />  
-            <FaceRecognition box={this.state.Box} imageUrl={this.state.imageUrl}/>
+            <FaceRecognition boxes={this.state.boxes} imageUrl={this.state.imageUrl}/>
         </div>
         : (
             this.state.route === 'signin'

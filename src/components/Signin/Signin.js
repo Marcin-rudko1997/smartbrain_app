@@ -1,5 +1,5 @@
 import React from 'react';
-
+import './Signin.css';
 
 
 class Signin extends React.Component {
@@ -19,26 +19,43 @@ class Signin extends React.Component {
 		this.setState({signInPassword: event.target.value});
 	}
 
+	saveAuthTokenInSession = token => {
+		window.sessionStorage.setItem('token', token);
+	}
+
 	onSubmitChange = (event) => {
-		fetch('http://localhost:3001/signin', {
+		fetch('http://192.168.99.100:3001/signin', {
 			method: 'post',
 			headers: {'Content-type': 'application/json'},
 			body: JSON.stringify( {
 				email: this.state.signInEmail,
 				password: this.state.signInPassword,
-				}
-			)
+				})
 		})
 		.then(response => response.json())
-		.then(user => {
-			if(user.id) {
-				this.props.loadUser(user);
-				this.props.onRouteChange('home');
-			}
-		})
+		.then(data => {
+			if(data.userId && data.success === 'true') {
+				this.saveAuthTokenInSession(data.token);
+				fetch(`http://192.168.99.100:3001/profile/${data.userId}`, {
+          method: 'get',
+          headers: {
+          'Content-Type': 'application/json',
+          'Authorization': data.token
+          }
+        })
+        .then(res => res.json())
+        .then(user => {
+          if(user && user.email) {
+            this.props.loadUser(user);
+            this.props.onRouteChange('home');
+          }
+        })
+        .catch(console.log)
+      }
+    })
+  }
 		
-	}
-
+		
 	render() {
 		const {onRouteChange} = this.props;
 		return (
@@ -51,13 +68,13 @@ class Signin extends React.Component {
 		        <label className="db fw6 lh-copy f6" htmlFor="email-address">Email</label>
 		        <input 
 		        onChange={this.onEmailChange}
-		        className="pa2 input-reset ba bg-transparent hover-bg-black hover-white w-100" type="email" name="email-address"  id="email-address"/>
+		        className="pa2 input-reset ba bg-transparent hover-bg-black hover-white w-100 hover-black" type="email" name="email-address"  id="email-address"/>
 		      </div>
 		      <div className="mv3">
 		        <label className="db fw6 lh-copy f6" htmlFor="password">Password</label>
 		        <input 
 		        onChange={this.onPasswordChange}
-		        className="b pa2 input-reset ba bg-transparent hover-bg-black hover-white w-100" type="password" name="password"  id="password"/>
+		        className="b pa2 input-reset ba bg-transparent hover-bg-black hover-white w-100 hover-black" type="password" name="password"  id="password"/>
 		      </div>
 		    </fieldset>
 		    <div className="">

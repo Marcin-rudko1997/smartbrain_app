@@ -1,7 +1,5 @@
 import React from 'react';
 
-
-
 class Register extends React.Component {
 	constructor(props) {
 		super(props);
@@ -25,7 +23,7 @@ class Register extends React.Component {
 	}
 
 	onSubmitChange = (event) => {
-		fetch('http://localhost:3001/register', {
+		fetch('http://192.168.99.100:3001/register', {
 			method: 'post',
 			headers: {'Content-type': 'application/json'},
 			body: JSON.stringify( {
@@ -56,25 +54,36 @@ class Register extends React.Component {
 		        <label className="db fw6 lh-copy f6" htmlFor="email-address">Name</label>
 		        <input 
 		        onChange={this.onNameChange}
-		        className="pa2 input-reset ba bg-transparent hover-bg-black hover-white w-100" type="text" name="name"  id="name"/>
+						className="pa2 input-reset ba bg-transparent hover-bg-black hover-white w-100" 
+						type="text" 
+						name="name"  
+						id="name"/>
 		      </div>
 		      <div className="mt3">
 		        <label className="db fw6 lh-copy f6" htmlFor="email-address">Email</label>
 		        <input 
 		        onChange={this.onEmailChange}
-		        className="pa2 input-reset ba bg-transparent hover-bg-black hover-white w-100" type="email" name="email-address"  id="email-address"/>
+						className="pa2 input-reset ba bg-transparent hover-bg-black hover-white w-100" 
+						type="email" 
+						name="email-address"  
+						id="email-address"/>
 		      </div>
 		      <div className="mv3">
 		        <label className="db fw6 lh-copy f6" htmlFor="password">Password</label>
 		        <input 
 		        onChange={this.onPasswordChange}
-		        className="b pa2 input-reset ba bg-transparent hover-bg-black hover-white w-100" type="password" name="password"  id="password"/>
+						className="b pa2 input-reset ba bg-transparent hover-bg-black hover-white w-100" 
+						type="password" 
+						name="password"  
+						id="password"/>
 		      </div>
 		    </fieldset>
 		    <div className="">
 		      <input 
 		      onClick={this.onSubmitChange}
-		      className="b ph3 pv2 input-reset ba b--black bg-transparent grow pointer f6 dib" type="submit" value="Register"/>
+					className="b ph3 pv2 input-reset ba b--black bg-transparent grow pointer f6 dib" 
+					type="submit" 
+					value="Register"/>
 		    </div>
 	  </div>
 	</main>
